@@ -1,0 +1,225 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "15"
+    meta.helm.sh/release-name: fleet
+    meta.helm.sh/release-namespace: default
+  creationTimestamp: "2025-04-22T03:56:08Z"
+  generation: 15
+  labels:
+    app: fleet
+    app.kubernetes.io/managed-by: Helm
+    chart: fleet
+    heritage: Helm
+    release: fleet
+  name: fleet
+  namespace: default
+  resourceVersion: "19271221"
+  uid: 145f74fc-d617-43b5-9bfe-026d092785f6
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 3
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: fleet
+      chart: fleet
+      heritage: Helm
+      release: fleet
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/restartedAt: "2025-04-22T12:19:17+02:00"
+      creationTimestamp: null
+      labels:
+        app: fleet
+        chart: fleet
+        heritage: Helm
+        release: fleet
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - fleet
+              topologyKey: kubernetes.io/hostname
+            weight: 100
+      containers:
+      - args:
+        - serve
+        command:
+        - /usr/bin/fleet
+        env:
+        - name: FLEET_VULNERABILITIES_DATABASES_PATH
+          value: /tmp/vuln
+        - name: FLEET_SERVER_ADDRESS
+          value: 0.0.0.0:8080
+        - name: FLEET_AUTH_BCRYPT_COST
+          value: "12"
+        - name: FLEET_AUTH_SALT_KEY_SIZE
+          value: "24"
+        - name: FLEET_APP_TOKEN_KEY_SIZE
+          value: "24"
+        - name: FLEET_APP_TOKEN_VALIDITY_PERIOD
+          value: 120h
+        - name: FLEET_SESSION_KEY_SIZE
+          value: "64"
+        - name: FLEET_SESSION_DURATION
+          value: 2160h
+        - name: FLEET_LOGGING_DEBUG
+          value: "false"
+        - name: FLEET_LOGGING_JSON
+          value: "false"
+        - name: FLEET_LOGGING_DISABLE_BANNER
+          value: "false"
+        - name: FLEET_SERVER_TLS
+          value: "true"
+        - name: FLEET_SERVER_TLS_COMPATIBILITY
+          value: modern
+        - name: FLEET_SERVER_CERT
+          value: /secrets/tls/tls.crt
+        - name: FLEET_SERVER_KEY
+          value: /secrets/tls/tls.key
+        - name: FLEET_MYSQL_ADDRESS
+          value: fleet-mysql.default.svc.cluster.local:3306
+        - name: FLEET_MYSQL_DATABASE
+          value: fleet
+        - name: FLEET_MYSQL_USERNAME
+          value: fleet
+        - name: FLEET_MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: mysql-password
+              name: mysql
+        - name: FLEET_MYSQL_MAX_OPEN_CONNS
+          value: "50"
+        - name: FLEET_MYSQL_MAX_IDLE_CONNS
+          value: "50"
+        - name: FLEET_MYSQL_CONN_MAX_LIFETIME
+          value: "0"
+        - name: FLEET_REDIS_ADDRESS
+          value: fleet-redis-master.default.svc.cluster.local:6379
+        - name: FLEET_REDIS_DATABASE
+          value: "0"
+        - name: FLEET_OSQUERY_NODE_KEY_SIZE
+          value: "24"
+        - name: FLEET_OSQUERY_LABEL_UPDATE_INTERVAL
+          value: 30m
+        - name: FLEET_OSQUERY_DETAIL_UPDATE_INTERVAL
+          value: 30m
+        - name: FLEET_OSQUERY_STATUS_LOG_PLUGIN
+          value: filesystem
+        - name: FLEET_OSQUERY_RESULT_LOG_PLUGIN
+          value: filesystem
+        - name: FLEET_FILESYSTEM_STATUS_LOG_FILE
+          value: /logs/osquery_status
+        - name: FLEET_FILESYSTEM_RESULT_LOG_FILE
+          value: /logs/osquery_result
+        - name: FLEET_FILESYSTEM_ENABLE_LOG_ROTATION
+          value: "false"
+        - name: FLEET_FILESYSTEM_ENABLE_LOG_COMPRESSION
+          value: "false"
+        - name: FLEET_SERVER_PRIVATE_KEY
+        - name: FLEET_REDIS_PASSWORD
+          value: vWHBKw988p
+        image: fleetdm/fleet:v4.66.0
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /healthz
+            port: 8080
+            scheme: HTTPS
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        name: fleet
+        ports:
+        - containerPort: 8080
+          name: fleet
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /healthz
+            port: 8080
+            scheme: HTTPS
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        resources:
+          limits:
+            cpu: "1"
+            memory: 4Gi
+          requests:
+            cpu: 100m
+            memory: 50Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          privileged: false
+          readOnlyRootFilesystem: true
+          runAsGroup: 3333
+          runAsNonRoot: true
+          runAsUser: 3333
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /tmp
+          name: tmp
+        - mountPath: /secrets/tls
+          name: fleet-tls
+          readOnly: true
+        - mountPath: /logs
+          name: osquery-logs
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: fleet
+      serviceAccountName: fleet
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - emptyDir: {}
+        name: tmp
+      - name: fleet-tls
+        secret:
+          defaultMode: 420
+          secretName: fleet-tls
+      - emptyDir:
+          sizeLimit: 20Gi
+        name: osquery-logs
+status:
+  availableReplicas: 2
+  conditions:
+  - lastTransitionTime: "2025-04-22T03:56:08Z"
+    lastUpdateTime: "2025-04-22T03:56:08Z"
+    message: Deployment does not have minimum availability.
+    reason: MinimumReplicasUnavailable
+    status: "False"
+    type: Available
+  - lastTransitionTime: "2025-04-22T10:48:24Z"
+    lastUpdateTime: "2025-04-22T10:48:28Z"
+    message: ReplicaSet "fleet-544f68b8bd" is progressing.
+    reason: ReplicaSetUpdated
+    status: "True"
+    type: Progressing
+  observedGeneration: 15
+  readyReplicas: 2
+  replicas: 4
+  unavailableReplicas: 2
+  updatedReplicas: 3
+

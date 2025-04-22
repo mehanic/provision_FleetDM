@@ -1,0 +1,86 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"batch/v1","kind":"Job","metadata":{"annotations":{},"name":"fleet-db-init","namespace":"default"},"spec":{"backoffLimit":1,"template":{"spec":{"containers":[{"command":["/bin/sh","-c","/usr/bin/fleet prepare db"],"env":[{"name":"FLEET_MYSQL_ADDRESS","value":"fleet-mysql.default.svc.cluster.local:3306"},{"name":"FLEET_MYSQL_DATABASE","value":"fleet"},{"name":"FLEET_MYSQL_USERNAME","value":"fleet"},{"name":"FLEET_MYSQL_PASSWORD","valueFrom":{"secretKeyRef":{"key":"mysql-password","name":"mysql"}}}],"image":"fleetdm/fleet:v4.66.0","name":"fleet-db-init"}],"restartPolicy":"Never"}}}}
+  creationTimestamp: "2025-04-22T09:30:30Z"
+  generation: 1
+  labels:
+    batch.kubernetes.io/controller-uid: 8f006999-6761-443f-b581-1e8881e290c7
+    batch.kubernetes.io/job-name: fleet-db-init
+    controller-uid: 8f006999-6761-443f-b581-1e8881e290c7
+    job-name: fleet-db-init
+  name: fleet-db-init
+  namespace: default
+  resourceVersion: "19245167"
+  uid: 8f006999-6761-443f-b581-1e8881e290c7
+spec:
+  backoffLimit: 1
+  completionMode: NonIndexed
+  completions: 1
+  manualSelector: false
+  parallelism: 1
+  podReplacementPolicy: TerminatingOrFailed
+  selector:
+    matchLabels:
+      batch.kubernetes.io/controller-uid: 8f006999-6761-443f-b581-1e8881e290c7
+  suspend: false
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        batch.kubernetes.io/controller-uid: 8f006999-6761-443f-b581-1e8881e290c7
+        batch.kubernetes.io/job-name: fleet-db-init
+        controller-uid: 8f006999-6761-443f-b581-1e8881e290c7
+        job-name: fleet-db-init
+    spec:
+      containers:
+      - command:
+        - /bin/sh
+        - -c
+        - /usr/bin/fleet prepare db
+        env:
+        - name: FLEET_MYSQL_ADDRESS
+          value: fleet-mysql.default.svc.cluster.local:3306
+        - name: FLEET_MYSQL_DATABASE
+          value: fleet
+        - name: FLEET_MYSQL_USERNAME
+          value: fleet
+        - name: FLEET_MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: mysql-password
+              name: mysql
+        image: fleetdm/fleet:v4.66.0
+        imagePullPolicy: IfNotPresent
+        name: fleet-db-init
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Never
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+status:
+  completionTime: "2025-04-22T09:31:33Z"
+  conditions:
+  - lastProbeTime: "2025-04-22T09:31:33Z"
+    lastTransitionTime: "2025-04-22T09:31:33Z"
+    message: Reached expected number of succeeded pods
+    reason: CompletionsReached
+    status: "True"
+    type: SuccessCriteriaMet
+  - lastProbeTime: "2025-04-22T09:31:33Z"
+    lastTransitionTime: "2025-04-22T09:31:33Z"
+    message: Reached expected number of succeeded pods
+    reason: CompletionsReached
+    status: "True"
+    type: Complete
+  ready: 0
+  startTime: "2025-04-22T09:30:30Z"
+  succeeded: 1
+  terminating: 0
+  uncountedTerminatedPods: {}
+

@@ -1,0 +1,25 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: fleet-db-init
+spec:
+  template:
+    spec:
+      containers:
+      - name: fleet-db-init
+        image: fleetdm/fleet:v4.66.0  # Correct Fleet image
+        command: ["/bin/sh", "-c", "/usr/bin/fleet prepare db"]  # Use /bin/sh instead of /bin/bash
+        env:
+          - name: FLEET_MYSQL_ADDRESS
+            value: fleet-mysql.default.svc.cluster.local:3306
+          - name: FLEET_MYSQL_DATABASE
+            value: fleet
+          - name: FLEET_MYSQL_USERNAME
+            value: fleet
+          - name: FLEET_MYSQL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: mysql
+                key: mysql-password
+      restartPolicy: Never
+  backoffLimit: 1
