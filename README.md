@@ -504,3 +504,142 @@ kubectl rollout restart deployment/fleet -n default
 kubectl delete pod -l release=fleet
 ```
 ![fleet services ](1.png)
+
+
+
+# metalb + traefik
+```
+└> $ sudo helm install traefik traefik/traefik \
+  --namespace traefik --create-namespace \
+  --set service.type=LoadBalancer
+[sudo] password for mehanic: 
+NAME: traefik
+LAST DEPLOYED: Mon Apr 21 19:25:40 2025
+NAMESPACE: traefik
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+NOTES:
+traefik with docker.io/traefik:v3.3.6 has been deployed successfully on traefik namespace !
+
+
+
+ └> $ sudo kubectl get all -n traefik 
+NAME                           READY   STATUS    RESTARTS   AGE
+pod/traefik-74f5c97947-6zwgc   1/1     Running   0          28s
+
+NAME              TYPE           CLUSTER-IP     EXTERNAL-IP   PORT(S)                      AGE
+service/traefik   LoadBalancer   10.0.255.217   <pending>     80:30091/TCP,443:30741/TCP   29s
+
+NAME                      READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/traefik   1/1     1            1           29s
+
+NAME                                 DESIRED   CURRENT   READY   AGE
+replicaset.apps/traefik-74f5c97947   1         1         1       29s
+
+
+ └> $ sudo  kubectl get nodes master -o wide
+NAME     STATUS   ROLES           AGE   VERSION   INTERNAL-IP     EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION      CONTAINER-RUNTIME
+master   Ready    control-plane   58d   v1.30.6   192.168.0.227   <none>        Ubuntu 24.04.2 LTS   6.11.0-21-generic   containerd://1.7.27
+
+
+ └> $ kubectl describe -n traefik svc traefik 
+Name:                     traefik
+Namespace:                traefik
+Labels:                   app.kubernetes.io/instance=traefik-traefik
+                          app.kubernetes.io/managed-by=Helm
+                          app.kubernetes.io/name=traefik
+                          helm.sh/chart=traefik-35.0.1
+Annotations:              meta.helm.sh/release-name: traefik
+                          meta.helm.sh/release-namespace: traefik
+Selector:                 app.kubernetes.io/instance=traefik-traefik,app.kubernetes.io/name=traefik
+Type:                     LoadBalancer
+IP Family Policy:         SingleStack
+IP Families:              IPv4
+IP:                       10.0.255.217
+IPs:                      10.0.255.217
+Port:                     web  80/TCP
+TargetPort:               web/TCP
+NodePort:                 web  30091/TCP
+Endpoints:                10.0.0.231:8000
+Port:                     websecure  443/TCP
+TargetPort:               websecure/TCP
+NodePort:                 websecure  30741/TCP
+Endpoints:                10.0.0.231:8443
+Session Affinity:         None
+External Traffic Policy:  Cluster
+Events:                   <none>
+
+
+ └> $ sudo kubectl get nodes master -o wide
+NAME     STATUS   ROLES           AGE   VERSION   INTERNAL-IP     EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION      CONTAINER-RUNTIME
+master   Ready    control-plane   58d   v1.30.6   192.168.0.227   <none>        Ubuntu 24.04.2 LTS   6.11.0-21-generic   containerd://1.7.27
+
+
+ └> $ sudo  kubectl get nodes master -o wide
+NAME     STATUS   ROLES           AGE   VERSION   INTERNAL-IP     EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION      CONTAINER-RUNTIME
+master   Ready    control-plane   58d   v1.30.6   192.168.0.227   <none>        Ubuntu 24.04.2 LTS   6.11.0-21-generic   containerd://1.7.27
+
+
+ └> $ kubectl get pods -n metallb-system
+NAME                       READY   STATUS    RESTARTS   AGE
+controller-c76b688-7dszb   1/1     Running   0          8m55s
+speaker-mvzsh              1/1     Running   0          8m55s
+
+
+ └> $ kubectl get ipaddresspools -n metallb-syste
+No resources found in metallb-syste namespace.
+
+
+ └> $ kubectl get ipaddresspools -n metallb-system 
+NAME      AUTO ASSIGN   AVOID BUGGY IPS   ADDRESSES
+my-pool   true          false             ["192.168.0.240-192.168.0.250"]
+
+
+ └> $ kubectl describe svc traefik -n traefik
+Name:                     traefik
+Namespace:                traefik
+Labels:                   app.kubernetes.io/instance=traefik-traefik
+                          app.kubernetes.io/managed-by=Helm
+                          app.kubernetes.io/name=traefik
+                          helm.sh/chart=traefik-35.0.1
+Annotations:              meta.helm.sh/release-name: traefik
+                          meta.helm.sh/release-namespace: traefik
+                          metallb.universe.tf/ip-allocated-from-pool: my-pool
+Selector:                 app.kubernetes.io/instance=traefik-traefik,app.kubernetes.io/name=traefik
+Type:                     LoadBalancer
+IP Family Policy:         SingleStack
+IP Families:              IPv4
+IP:                       10.0.255.217
+IPs:                      10.0.255.217
+LoadBalancer Ingress:     192.168.0.240
+Port:                     web  80/TCP
+TargetPort:               web/TCP
+NodePort:                 web  30091/TCP
+Endpoints:                10.0.0.231:8000
+Port:                     websecure  443/TCP
+TargetPort:               websecure/TCP
+NodePort:                 websecure  30741/TCP
+Endpoints:                10.0.0.231:8443
+Session Affinity:         None
+External Traffic Policy:  Cluster
+Events:
+  Type     Reason            Age                    From                Message
+  ----     ------            ----                   ----                -------
+  Warning  AllocationFailed  9m33s (x2 over 9m33s)  metallb-controller  Failed to allocate IP for "traefik/traefik": no available IPs
+  Normal   IPAllocated       4m                     metallb-controller  Assigned IP ["192.168.0.240"]
+  Normal   nodeAssigned      4m                     metallb-speaker     announcing from node "master" with protocol "layer2"
+
+
+#The curl -I http://192.168.0.240 command is making an HTTP #request to the IP address 192.168.0.240 and retrieving the #HTTP headers. The -I option tells curl to only show the #response headers, not the body of the response.
+
+
+ └> $ curl -I http://192.168.0.240
+HTTP/1.1 404 Not Found
+Content-Type: text/plain; charset=utf-8
+X-Content-Type-Options: nosniff
+Date: Mon, 21 Apr 2025 17:42:00 GMT
+Content-Length: 19
+
+
+```
